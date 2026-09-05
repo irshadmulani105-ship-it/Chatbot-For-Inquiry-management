@@ -1,0 +1,194 @@
+<html>
+<head>
+<title>Customer Support Bot</title>
+<style>
+    body {
+        background: white; 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+    }
+    
+    #app_window {
+        width: 400px;
+        height: 85vh;
+        margin: 40px auto; 
+        background-color: white;
+        border-radius: 15px;
+        box-shadow: 0px 10px 20px rgb(15, 14, 14);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .header_area {
+        background: #4f46e5;
+        color: white;
+        padding: 20px;
+        text-align: center;
+    }
+    
+    .header_area input {
+        width: 45%;
+        margin-top: 10px;
+        padding: 8px;
+        border: none;
+        border-radius: 5px;
+        outline: none;
+    }
+
+    #chat_history {
+        flex: 1;
+        padding: 20px;
+        overflow-y: scroll;
+        background: #f9fafb;
+    }
+
+    .user_txt {
+        background: #4f46e5; 
+        color: white; 
+        float: right; 
+        clear: both; 
+        padding: 12px 16px; 
+        margin-bottom: 15px; 
+        border-radius: 15px 15px 0px 15px; 
+        max-width: 75%;
+        font-size: 15px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .bot_txt {
+        background: #ffffff; 
+        color: #333; 
+        float: left; 
+        clear: both; 
+        padding: 12px 16px; 
+        margin-bottom: 15px; 
+        border-radius: 15px 15px 15px 0px; 
+        max-width: 75%;
+        font-size: 15px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border: 1px solid #e5e7eb;
+    }
+
+    .type_area {
+        display: flex;
+        padding: 15px;
+        background: white;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .type_area input {
+        flex: 1;
+        padding: 12px;
+        border: 1px solid #ccc;
+        border-radius: 25px;
+        outline: none;
+    }
+
+    .type_area button {
+        background: #4f46e5;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        margin-left: 10px;
+        border-radius: 25px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    #typing_text { 
+        display: none; 
+        color: #9ca3af; 
+        font-size: 13px; 
+        clear: both; 
+        margin-bottom: 15px;
+        font-style: italic;
+    }
+</style>
+</head>
+<body>
+
+<div id="app_window">
+    <div class="header_area">
+        <h3 style="margin: 0;">Support Chatbot</h3>
+        <input type='text' id="n1" placeholder="Your Name">
+        <input type="text" id='p1' placeholder="Phone Number">
+    </div>
+
+    <div id="chat_history">
+        <div class="bot_txt">Please give ous your name and phone.no to contact you. Say hi to start the conversation.</div>
+        
+        <!-- text to show when bot is thinking -->
+        <div id="typing_text">bot is typing...</div>
+    </div>
+
+    <div class="type_area">
+        <input type="text" id="t1" placeholder="Type a message...">
+        <button onclick="send_data()">Send</button>
+    </div>
+</div>
+
+<script>
+    // adding the enter key functionality
+    document.getElementById("t1").addEventListener("keypress", function(e) {
+      if (e.key === "Enter") {
+        send_data();
+      }
+    });
+
+    function send_data() {
+        var msg_val = document.getElementById("t1").value;
+        var name_val = document.getElementById("n1").value;
+        var phone_val = document.getElementById("p1").value;
+
+        if(msg_val == "") {
+            return false; 
+        }
+
+        // 1. put user message on screen
+        var d = document.createElement("div");
+        d.className = "user_txt";
+        d.innerHTML = msg_val;
+        
+        var history_box = document.getElementById("chat_history");
+        history_box.insertBefore(d, document.getElementById("typing_text"));
+        
+        document.getElementById("t1").value = "";
+        history_box.scrollTop = history_box.scrollHeight; 
+        
+        document.getElementById("typing_text").style.display = "block";
+
+        var payload = {
+            "message": msg_val,
+            "name": name_val,
+            "phone": phone_val
+        };
+
+        // 2. talk to flask backend
+        fetch('/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("typing_text").style.display = "none";
+            
+            // 3. put bot reply on screen
+            var b_div = document.createElement("div");
+            b_div.className = "bot_txt";
+            b_div.innerHTML = data.reply;
+            document.getElementById("chat_history").insertBefore(b_div, document.getElementById("typing_text"));
+            
+            document.getElementById("chat_history").scrollTop = document.getElementById("chat_history").scrollHeight;
+        })
+        .catch((err) => {
+            document.getElementById("typing_text").style.display = "none";
+        });
+    }
+</script>
+</body>
+</html>
